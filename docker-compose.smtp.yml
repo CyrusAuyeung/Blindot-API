@@ -1,0 +1,26 @@
+services:
+  sub2api:
+    extra_hosts:
+      - "smtp.example.com:172.18.0.250"
+
+  smtp2brevo:
+    build:
+      context: ./smtp2brevo
+    container_name: smtp2brevo
+    restart: unless-stopped
+    env_file:
+      - .smtp2brevo.env
+    expose:
+      - "8025"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      sub2api-network:
+        ipv4_address: 172.18.0.250
+        aliases:
+          - smtp2brevo
+
+networks:
+  sub2api-network:
+    external: true
+    name: sub2api-deploy_sub2api-network
