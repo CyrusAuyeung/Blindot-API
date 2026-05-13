@@ -1,42 +1,111 @@
-# Upgrade Notes
+# Upgrade Notes / 升级说明
 
-Use pinned image tags for predictable Sub2API upgrades.
+[中文](#zh-cn) | [English](#english)
 
-## Upgrade Sub2API
+<a id="zh-cn"></a>
 
-Edit docker-compose.yml and set the desired Sub2API image tag.
+## 中文
+
+建议使用固定镜像标签进行升级，避免长期依赖 `latest`。
+
+### 升级 Sub2API
+
+修改 `docker-compose.yml` 中的 Sub2API 镜像版本。
+
+然后执行：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+```
+
+### 检查状态
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
+docker logs --tail=100 sub2api
+docker logs --tail=100 smtp2brevo
+```
+
+### 升级前备份
+
+生产环境升级前至少备份：
+
+```text
+.env
+.smtp2brevo.env
+docker-compose.yml
+docker-compose.smtp.yml
+PostgreSQL database dump
+```
+
+### 回滚
+
+将 `docker-compose.yml` 中的 Sub2API 镜像版本改回旧版本，然后执行：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+```
+
+### 危险命令
+
+除非你明确知道自己要删除数据，否则不要在生产环境执行：
+
+```bash
+docker compose down -v
+```
+
+---
+
+<a id="english"></a>
+
+## English
+
+Pinned image tags are recommended for predictable upgrades. Avoid relying on `latest` for long-term production deployments.
+
+### Upgrade Sub2API
+
+Edit the Sub2API image tag in `docker-compose.yml`.
 
 Then run:
 
-    docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
-    docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+```bash
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+```
 
-## Check Status
+### Check Status
 
-    docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
-    docker logs --tail=100 sub2api
-    docker logs --tail=100 smtp2brevo
+```bash
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
+docker logs --tail=100 sub2api
+docker logs --tail=100 smtp2brevo
+```
 
-## Backup Before Upgrading
+### Backup Before Upgrading
 
-Back up configuration files and database data before upgrading production deployments.
+For production deployments, back up at least:
 
-At minimum, back up:
+```text
+.env
+.smtp2brevo.env
+docker-compose.yml
+docker-compose.smtp.yml
+PostgreSQL database dump
+```
 
-    .env
-    .smtp2brevo.env
-    docker-compose.yml
-    docker-compose.smtp.yml
-    PostgreSQL database dump
+### Rollback
 
-## Dangerous Commands
+Change the Sub2API image tag in `docker-compose.yml` back to the previous version, then run:
 
-Do not run this on production unless you intentionally want to delete volumes and data:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+```
 
-    docker compose down -v
+### Dangerous Command
 
-## Rollback
+Do not run this in production unless you intentionally want to delete data:
 
-To roll back, restore the previous image tag in docker-compose.yml and recreate Sub2API:
-
-    docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+```bash
+docker compose down -v
+```
