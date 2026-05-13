@@ -104,9 +104,11 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api sm
 
 安全说明见 [docs/security.md](docs/security.md)。
 
-## 许可证
+## 许可证与品牌
 
 本仓库中的部署文件、文档和 `smtp2brevo` 代码使用 MIT License。第三方镜像、项目和依赖遵循其各自许可证。
+
+`Blindot` 和 `Blindot API` 名称用于标识本项目和相关服务。MIT License 不授予任何商标权、品牌使用权或以 Blindot 名义运营服务的权利。
 
 ---
 
@@ -209,6 +211,8 @@ Run before committing:
 
 See [docs/security.md](docs/security.md).
 
-## License
+## License And Brand
 
 Deployment files, documentation, and `smtp2brevo` code in this repository are licensed under the MIT License. Third-party images, projects, and dependencies retain their own licenses.
+
+The `Blindot` and `Blindot API` names identify this project and related services. The MIT License does not grant trademark rights, brand usage rights, or the right to operate services under the Blindot name.
