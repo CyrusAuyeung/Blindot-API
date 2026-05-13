@@ -13,18 +13,40 @@ Blindot API 是一套基于 Sub2API 构建的 AI API 中转站，用于统一接
 
 本仓库提供 Blindot API 的公开部署编排与运维资料，覆盖 Docker Compose、PostgreSQL、Redis、smtp2brevo 邮件中转、Nginx 反向代理、升级、备份恢复和安全检查。生产环境中的域名、密钥、数据库密码、邮件服务凭据和运行时参数均通过本地环境文件注入。
 
-## 功能定位
+## 中转站能力
 
-Blindot API 关注中转站的部署和运行层面，核心目标是让一套 Sub2API 服务可以稳定运行在 Docker 环境中，并具备可维护的数据库、缓存、邮件和反向代理配置。
+Blindot API 面向需要统一模型入口的用户和应用，提供一套 OpenAI/Anthropic/Gemini 兼容风格的 API 中转层。通过一个 API 密钥即可接入多个上游模型渠道，并由网关负责路由、负载均衡、可用性检测、用量统计和余额计费。
 
-典型能力包括：
+核心能力包括：
 
-- AI API 中转与上游模型网关
-- 用户、分组、渠道、订阅和计费能力
-- PostgreSQL 持久化存储
-- Redis 缓存与队列能力
-- 基于 Brevo HTTPS API 的邮件验证码/通知发送
-- 可复用的升级、备份和安全检查流程
+- 统一 API 入口与密钥管理
+- 多上游账号与多渠道调度
+- 自动切换、健康检测和可用率统计
+- 用户、分组、渠道、订阅和计费管理
+- 内容风控、请求审计和运行监控
+- 邮箱验证码、余额提醒和通知能力
+
+## 模型支持
+
+Blindot API 可通过 Sub2API 接入多个模型供应商和模型族。公开站点当前展示的模型族包括：
+
+- Claude
+- GPT / OpenAI
+- Gemini
+- Antigravity
+
+当前 OpenAI 侧示例模型包括：
+
+- `gpt-5.2`
+- `gpt-5.3-codex`
+- `gpt-5.4-mini`
+- `gpt-5.4`
+- `gpt-5.5`
+- `gpt-image-1`
+- `gpt-image-2`
+- `gpt-image-1.5`
+
+实际可用模型取决于部署时配置的上游渠道、账号权限、模型映射、分组策略和运行状态。
 
 ## 架构
 
@@ -198,18 +220,40 @@ Blindot API is an AI API relay gateway built on top of Sub2API. It provides a un
 
 This repository contains the public deployment orchestration and operations material for Blindot API, including Docker Compose, PostgreSQL, Redis, the smtp2brevo mail relay, Nginx reverse proxy examples, upgrade notes, backup and restore notes, and safety checks. Production-specific domains, credentials, database passwords, mail provider keys, and runtime values are injected through local environment files.
 
-## Purpose
+## Relay Capabilities
 
-Blindot API focuses on the deployment and runtime layer of an AI API relay service. The goal is to run a Sub2API-based gateway reliably in Docker with maintainable database, cache, mail, and reverse proxy configuration.
+Blindot API is designed for users and applications that need a unified model gateway. It provides an API relay layer with OpenAI/Anthropic/Gemini-compatible usage patterns. A single API key can access multiple upstream model channels while the gateway handles routing, load balancing, health checks, usage statistics, and balance billing.
 
-Typical capabilities include:
+Core capabilities include:
 
-- AI API relay and upstream model gateway
-- Users, groups, channels, subscriptions, and billing
-- PostgreSQL persistent storage
-- Redis cache and queue features
-- Email verification and notifications through Brevo HTTPS API
-- Reusable upgrade, backup, and safety-check workflows
+- Unified API entry point and key management
+- Multi-account and multi-channel upstream routing
+- Automatic failover, health checks, and availability metrics
+- User, group, channel, subscription, and billing management
+- Content moderation, request auditing, and runtime monitoring
+- Email verification, balance reminders, and notification delivery
+
+## Model Support
+
+Blindot API can connect to multiple model providers and model families through Sub2API. Model families currently shown on the public site include:
+
+- Claude
+- GPT / OpenAI
+- Gemini
+- Antigravity
+
+Current OpenAI-side example models include:
+
+- `gpt-5.2`
+- `gpt-5.3-codex`
+- `gpt-5.4-mini`
+- `gpt-5.4`
+- `gpt-5.5`
+- `gpt-image-1`
+- `gpt-image-2`
+- `gpt-image-1.5`
+
+Actual model availability depends on upstream channels, account permissions, model mappings, group policies, and runtime health.
 
 ## Architecture
 
