@@ -28,14 +28,14 @@ Blindot API 面向需要统一模型入口的用户和应用，提供一套 Open
 
 ## 模型支持
 
-Blindot API 可通过 Sub2API 接入多个模型供应商和模型族。公开站点当前展示的模型族包括：
+Blindot API 通过 Sub2API 接入多个模型供应商和模型族。公开站点当前支持的模型族包括：
 
 - Claude
 - GPT / OpenAI
 - Gemini
 - Antigravity
 
-当前 OpenAI 侧示例模型包括：
+当前 OpenAI 侧支持模型包括：
 
 - `gpt-5.2`
 - `gpt-5.3-codex`
@@ -235,14 +235,14 @@ Core capabilities include:
 
 ## Model Support
 
-Blindot API can connect to multiple model providers and model families through Sub2API. Model families currently shown on the public site include:
+Blindot API connects to multiple model providers and model families through Sub2API. Model families currently supported on the public site include:
 
 - Claude
 - GPT / OpenAI
 - Gemini
 - Antigravity
 
-Current OpenAI-side example models include:
+Current OpenAI-side supported models include:
 
 - `gpt-5.2`
 - `gpt-5.3-codex`
