@@ -1,0 +1,7 @@
+node_modules
+npm-debug.log
+certs
+*.pem
+*.key
+.env
+.smtp2brevo.env

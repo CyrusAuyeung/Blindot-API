@@ -11,7 +11,20 @@
 
 Blindot API 是一套基于 Sub2API 构建的 AI API 中转站，用于统一接入、调度和管理上游模型能力。
 
-本仓库提供 Blindot API 的公开部署编排与运维资料，包括 Docker Compose、PostgreSQL、Redis、smtp2brevo 邮件中转、升级流程和安全检查脚本。生产环境中的域名、密钥、数据库密码、邮件服务凭据和运行时参数均通过本地环境文件注入。
+本仓库提供 Blindot API 的公开部署编排与运维资料，覆盖 Docker Compose、PostgreSQL、Redis、smtp2brevo 邮件中转、Nginx 反向代理、升级、备份恢复和安全检查。生产环境中的域名、密钥、数据库密码、邮件服务凭据和运行时参数均通过本地环境文件注入。
+
+## 功能定位
+
+Blindot API 关注中转站的部署和运行层面，核心目标是让一套 Sub2API 服务可以稳定运行在 Docker 环境中，并具备可维护的数据库、缓存、邮件和反向代理配置。
+
+典型能力包括：
+
+- AI API 中转与上游模型网关
+- 用户、分组、渠道、订阅和计费能力
+- PostgreSQL 持久化存储
+- Redis 缓存与队列能力
+- 基于 Brevo HTTPS API 的邮件验证码/通知发送
+- 可复用的升级、备份和安全检查流程
 
 ## 架构
 
@@ -19,6 +32,7 @@ API 请求链路：
 
 ```text
 Client / WebUI
+  -> Reverse Proxy
   -> Blindot API (Sub2API)
   -> Upstream AI providers
 ```
@@ -32,6 +46,16 @@ Sub2API
   -> User inbox
 ```
 
+服务组件：
+
+```text
+Docker Compose
+  ├─ sub2api
+  ├─ postgres
+  ├─ redis
+  └─ smtp2brevo
+```
+
 ## 组件
 
 - `Sub2API`：AI API 中转、用户管理、渠道管理、计费、风控和网关能力
@@ -39,18 +63,35 @@ Sub2API
 - `Redis`：缓存、队列和运行状态
 - `smtp2brevo`：SMTP 到 Brevo HTTPS API 的本地邮件中转
 - `Docker Compose`：服务编排和部署入口
+- `Nginx / reverse proxy`：推荐的公网 HTTPS 入口
 
 ## 目录结构
 
 ```text
-docker-compose.yml          主服务编排
-docker-compose.smtp.yml     邮件中转扩展编排
-.env.example                Sub2API 环境变量示例
-.smtp2brevo.env.example     smtp2brevo 环境变量示例
-smtp2brevo/                 邮件中转服务源码
-docs/                       部署、升级和安全说明
-scripts/                    辅助检查脚本
+docker-compose.yml              主服务编排
+docker-compose.smtp.yml         邮件中转扩展编排
+.env.example                    Sub2API 环境变量示例
+.smtp2brevo.env.example         smtp2brevo 环境变量示例
+smtp2brevo/                     邮件中转服务源码
+docs/deployment.md              部署说明
+docs/configuration.md           配置说明
+docs/smtp2brevo.md              邮件中转说明
+docs/nginx.md                   反向代理示例
+docs/backup-restore.md          备份与恢复说明
+docs/upgrade.md                 升级说明
+docs/security.md                安全说明
+docs/production-checklist.md    上线前检查清单
+scripts/check-public-safe.sh     公开仓库安全检查脚本
 ```
+
+## 前置要求
+
+- Linux 服务器
+- Docker Engine
+- Docker Compose v2
+- 一个可解析到服务器的域名
+- HTTPS 反向代理，例如 Nginx + Certbot
+- 可用的邮件服务商 API Key，例如 Brevo
 
 ## 快速开始
 
@@ -75,15 +116,52 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
 ```
 
+查看日志：
+
+```bash
+docker logs --tail=100 sub2api
+docker logs --tail=100 smtp2brevo
+```
+
+## 部署流程
+
+推荐按以下顺序部署：
+
+1. 准备 `.env` 与 `.smtp2brevo.env`
+2. 启动 PostgreSQL、Redis、Sub2API 和 smtp2brevo
+3. 配置反向代理和 HTTPS
+4. 在 Sub2API 后台配置 SMTP
+5. 发送测试邮件
+6. 配置支付、风控、注册和用户策略
+7. 上线前运行安全检查和备份流程
+
+详细步骤见 [docs/deployment.md](docs/deployment.md)。
+
 ## 邮件中转
 
 当服务器无法直连传统 SMTP 出站端口时，可以启用 `smtp2brevo`。Sub2API 仍通过 SMTP 连接本地中转服务，中转服务再通过 Brevo HTTPS API 发信。
 
 详见 [docs/smtp2brevo.md](docs/smtp2brevo.md)。
 
-## 部署与升级
+## 反向代理
 
-部署说明见 [docs/deployment.md](docs/deployment.md)。
+建议只把反向代理暴露到公网，内部服务端口通过 Docker 网络或本机端口访问。
+
+Nginx 示例见 [docs/nginx.md](docs/nginx.md)。
+
+## 备份与恢复
+
+生产环境升级前应至少备份：
+
+- `.env`
+- `.smtp2brevo.env`
+- `docker-compose.yml`
+- `docker-compose.smtp.yml`
+- PostgreSQL 数据库 dump
+
+详见 [docs/backup-restore.md](docs/backup-restore.md)。
+
+## 升级
 
 升级 Sub2API：
 
@@ -102,7 +180,7 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api sm
 ./scripts/check-public-safe.sh
 ```
 
-安全说明见 [docs/security.md](docs/security.md)。
+安全说明见 [docs/security.md](docs/security.md)。上线前检查见 [docs/production-checklist.md](docs/production-checklist.md)。
 
 ## 许可证与品牌
 
@@ -118,7 +196,20 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api sm
 
 Blindot API is an AI API relay gateway built on top of Sub2API. It provides a unified gateway layer for connecting, routing, and operating upstream AI model providers.
 
-This repository contains the public deployment orchestration and operations material for Blindot API, including Docker Compose, PostgreSQL, Redis, the smtp2brevo mail relay, upgrade notes, and safety checks. Production-specific domains, credentials, database passwords, mail provider keys, and runtime values are injected through local environment files.
+This repository contains the public deployment orchestration and operations material for Blindot API, including Docker Compose, PostgreSQL, Redis, the smtp2brevo mail relay, Nginx reverse proxy examples, upgrade notes, backup and restore notes, and safety checks. Production-specific domains, credentials, database passwords, mail provider keys, and runtime values are injected through local environment files.
+
+## Purpose
+
+Blindot API focuses on the deployment and runtime layer of an AI API relay service. The goal is to run a Sub2API-based gateway reliably in Docker with maintainable database, cache, mail, and reverse proxy configuration.
+
+Typical capabilities include:
+
+- AI API relay and upstream model gateway
+- Users, groups, channels, subscriptions, and billing
+- PostgreSQL persistent storage
+- Redis cache and queue features
+- Email verification and notifications through Brevo HTTPS API
+- Reusable upgrade, backup, and safety-check workflows
 
 ## Architecture
 
@@ -126,6 +217,7 @@ API request flow:
 
 ```text
 Client / WebUI
+  -> Reverse Proxy
   -> Blindot API (Sub2API)
   -> Upstream AI providers
 ```
@@ -139,6 +231,16 @@ Sub2API
   -> User inbox
 ```
 
+Service components:
+
+```text
+Docker Compose
+  ├─ sub2api
+  ├─ postgres
+  ├─ redis
+  └─ smtp2brevo
+```
+
 ## Components
 
 - `Sub2API`: AI API relay, users, channels, billing, moderation, and gateway logic
@@ -146,18 +248,35 @@ Sub2API
 - `Redis`: cache, queues, and runtime state
 - `smtp2brevo`: local SMTP-to-Brevo HTTPS API mail relay
 - `Docker Compose`: service orchestration and deployment entry point
+- `Nginx / reverse proxy`: recommended public HTTPS entry point
 
 ## Repository Layout
 
 ```text
-docker-compose.yml          Main service stack
-docker-compose.smtp.yml     Mail relay extension stack
-.env.example                Example Sub2API environment file
-.smtp2brevo.env.example     Example smtp2brevo environment file
-smtp2brevo/                 Mail relay source code
-docs/                       Deployment, upgrade, and security notes
-scripts/                    Helper scripts
+docker-compose.yml              Main service stack
+docker-compose.smtp.yml         Mail relay extension stack
+.env.example                    Example Sub2API environment file
+.smtp2brevo.env.example         Example smtp2brevo environment file
+smtp2brevo/                     Mail relay source code
+docs/deployment.md              Deployment guide
+docs/configuration.md           Configuration notes
+docs/smtp2brevo.md              Mail relay notes
+docs/nginx.md                   Reverse proxy example
+docs/backup-restore.md          Backup and restore notes
+docs/upgrade.md                 Upgrade notes
+docs/security.md                Security notes
+docs/production-checklist.md    Production checklist
+scripts/check-public-safe.sh     Public repository safety check
 ```
+
+## Requirements
+
+- Linux server
+- Docker Engine
+- Docker Compose v2
+- A domain pointing to the server
+- HTTPS reverse proxy, for example Nginx + Certbot
+- Mail provider API key, for example Brevo
 
 ## Quick Start
 
@@ -182,15 +301,52 @@ Check status:
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
 ```
 
+Check logs:
+
+```bash
+docker logs --tail=100 sub2api
+docker logs --tail=100 smtp2brevo
+```
+
+## Deployment Flow
+
+Recommended deployment order:
+
+1. Prepare `.env` and `.smtp2brevo.env`
+2. Start PostgreSQL, Redis, Sub2API, and smtp2brevo
+3. Configure reverse proxy and HTTPS
+4. Configure SMTP in the Sub2API dashboard
+5. Send a test email
+6. Configure payment, moderation, registration, and user policies
+7. Run safety checks and backup procedures before production use
+
+See [docs/deployment.md](docs/deployment.md).
+
 ## Mail Relay
 
 When a server cannot connect to traditional outbound SMTP ports, `smtp2brevo` can be enabled. Sub2API connects to the local relay through SMTP, and the relay sends email through the Brevo HTTPS API.
 
 See [docs/smtp2brevo.md](docs/smtp2brevo.md).
 
-## Deployment And Upgrade
+## Reverse Proxy
 
-See [docs/deployment.md](docs/deployment.md) for deployment notes.
+The public internet should normally reach only the reverse proxy. Internal service ports should stay inside Docker networks or localhost bindings.
+
+See [docs/nginx.md](docs/nginx.md).
+
+## Backup And Restore
+
+Before production upgrades, back up at least:
+
+- `.env`
+- `.smtp2brevo.env`
+- `docker-compose.yml`
+- `docker-compose.smtp.yml`
+- PostgreSQL database dump
+
+See [docs/backup-restore.md](docs/backup-restore.md).
+
+## Upgrade
 
 Upgrade Sub2API:
 
@@ -209,7 +365,7 @@ Run before committing:
 ./scripts/check-public-safe.sh
 ```
 
-See [docs/security.md](docs/security.md).
+See [docs/security.md](docs/security.md). See [docs/production-checklist.md](docs/production-checklist.md) before production use.
 
 ## License And Brand
 
