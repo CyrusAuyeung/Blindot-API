@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a deployment or relay issue
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the issue clearly.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Docker, OS, and relevant service versions.
+      placeholder: |
+        OS:
+        Docker version:
+        Compose version:
+        Sub2API image tag:
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include commands or configuration details with secrets removed.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste relevant logs after removing secrets.
+      render: shell
