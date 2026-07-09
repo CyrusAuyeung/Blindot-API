@@ -20,7 +20,12 @@ fi
 
 echo "Scanning for private identifiers and common secret patterns..."
 
-if grep -RInE "blindot\.org|104\.248|Cyrus|Ouyang|noreply@blindot|support@blindot|BEGIN .*PRIVATE KEY|sk-|ghp_|xkeysib-" . --exclude-dir=.git --exclude=check-public-safe.sh; then
+if grep -RInE "104\.248|Cyrus|Ouyang|noreply@blindot|support@blindot|BEGIN .*PRIVATE KEY|sk-[A-Za-z0-9_-]{16,}|ghp_|xkeysib-" . --exclude-dir=.git --exclude=check-public-safe.sh; then
+  echo "Potential private data or secret found."
+  exit 1
+fi
+
+if grep -RInE "blindot\.org" . --exclude-dir=.git --exclude=check-public-safe.sh | grep -vE "api\.blindot\.org"; then
   echo "Potential private data or secret found."
   exit 1
 fi

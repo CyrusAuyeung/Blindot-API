@@ -30,23 +30,75 @@ Blindot API 面向需要统一模型入口的用户和应用，提供一套 Open
 
 Blindot API 通过 Sub2API 接入多个模型供应商和模型族。公开站点当前支持的模型族包括：
 
-- Claude
 - GPT / OpenAI
-- Gemini
-- Antigravity
+- Codex
+- GPT Image
+- Grok
 
-当前 OpenAI 侧支持模型包括：
+API 调用 Base URL：`https://api.blindot.org`
+
+当前控制台可选择并对外公告的模型清单如下：
+
+**GPT 系列模型**
+
+GPT-5.6 系列：
+
+- `gpt-5.6-sol`
+- `gpt-5.6-terra`
+- `gpt-5.6-luna`
+
+GPT-5.5 系列：
+
+- `gpt-5.5`
+
+GPT-5.4 系列：
+
+- `gpt-5.4`
+- `gpt-5.4-mini`
+
+GPT-5.3 系列：
+
+- `gpt-5.3-codex-spark`
+
+GPT-5.2 系列：
 
 - `gpt-5.2`
-- `gpt-5.3-codex`
-- `gpt-5.4-mini`
-- `gpt-5.4`
-- `gpt-5.5`
-- `gpt-image-1`
-- `gpt-image-2`
-- `gpt-image-1.5`
 
-实际可用模型取决于部署时配置的上游渠道、账号权限、模型映射、分组策略和运行状态。
+**Codex 模型**
+
+- `codex-auto-review`
+
+**GPT Image 系列**
+
+- `gpt-image-1`
+- `gpt-image-1.5`
+- `gpt-image-2`
+
+**Grok 系列模型**
+
+Grok 4 系列：
+
+- `grok-4.5`
+- `grok-4.3`
+- `grok-4.20-reasoning`
+- `grok-4.20-non-reasoning`
+- `grok-4.20-multi-agent`
+
+Grok Build / Composer：
+
+- `grok-build-0.1`
+- `grok-composer-2.5-fast`
+
+Grok Imagine 系列：
+
+- `grok-imagine`
+- `grok-imagine-image`
+- `grok-imagine-image-quality`
+- `grok-imagine-edit`
+- `grok-imagine-video`
+- `grok-imagine-video-1.5`
+
+未在上表列出的历史模型名、兼容名、预览名或别名，不再作为实际可用模型对外公告。实际可用模型取决于部署时配置的上游渠道、账号权限、模型映射、分组策略和运行状态。
 
 ## 架构
 
@@ -237,23 +289,75 @@ Core capabilities include:
 
 Blindot API connects to multiple model providers and model families through Sub2API. Model families currently supported on the public site include:
 
-- Claude
 - GPT / OpenAI
-- Gemini
-- Antigravity
+- Codex
+- GPT Image
+- Grok
 
-Current OpenAI-side supported models include:
+API base URL: `https://api.blindot.org`
+
+Current console-selectable and publicly announced models include:
+
+**GPT models**
+
+GPT-5.6 series:
+
+- `gpt-5.6-sol`
+- `gpt-5.6-terra`
+- `gpt-5.6-luna`
+
+GPT-5.5 series:
+
+- `gpt-5.5`
+
+GPT-5.4 series:
+
+- `gpt-5.4`
+- `gpt-5.4-mini`
+
+GPT-5.3 series:
+
+- `gpt-5.3-codex-spark`
+
+GPT-5.2 series:
 
 - `gpt-5.2`
-- `gpt-5.3-codex`
-- `gpt-5.4-mini`
-- `gpt-5.4`
-- `gpt-5.5`
-- `gpt-image-1`
-- `gpt-image-2`
-- `gpt-image-1.5`
 
-Actual model availability depends on upstream channels, account permissions, model mappings, group policies, and runtime health.
+**Codex models**
+
+- `codex-auto-review`
+
+**GPT Image models**
+
+- `gpt-image-1`
+- `gpt-image-1.5`
+- `gpt-image-2`
+
+**Grok models**
+
+Grok 4 series:
+
+- `grok-4.5`
+- `grok-4.3`
+- `grok-4.20-reasoning`
+- `grok-4.20-non-reasoning`
+- `grok-4.20-multi-agent`
+
+Grok Build / Composer:
+
+- `grok-build-0.1`
+- `grok-composer-2.5-fast`
+
+Grok Imagine series:
+
+- `grok-imagine`
+- `grok-imagine-image`
+- `grok-imagine-image-quality`
+- `grok-imagine-edit`
+- `grok-imagine-video`
+- `grok-imagine-video-1.5`
+
+Historical model names, compatibility names, preview names, or aliases not listed above are no longer publicly announced as available models. Actual model availability depends on upstream channels, account permissions, model mappings, group policies, and runtime health.
 
 ## Architecture
 
