@@ -58,7 +58,7 @@ Avoid publishing complete `docker compose config` output: it may contain resolve
 The commands below change runtime state. Run them only after approval, backup, review, and preflight:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api postgres redis
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml build --pull smtp2brevo
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d
 ```

@@ -9,6 +9,7 @@ const {
   loadConfig,
   sendByBrevo
 } = require("../server");
+const { createTlsOptions } = require("../healthcheck");
 
 function validEnv(overrides = {}) {
   return {
@@ -86,9 +87,18 @@ test("buildBrevoPayload rejects attachments instead of silently dropping them", 
 test("sendByBrevo sends JSON without exposing credentials in the body", async () => {
   const config = loadConfig(validEnv());
   let request;
+  let responseBodyCanceled = false;
   const fetchImpl = async (url, options) => {
     request = { url, options };
-    return { ok: true, status: 201 };
+    return {
+      ok: true,
+      status: 201,
+      body: {
+        cancel: async () => {
+          responseBodyCanceled = true;
+        }
+      }
+    };
   };
 
   await sendByBrevo(
@@ -102,6 +112,7 @@ test("sendByBrevo sends JSON without exposing credentials in the body", async ()
   assert.equal(request.options.headers["api-key"], "test-brevo-key");
   assert.doesNotMatch(request.options.body, /test-brevo-key/);
   assert.deepEqual(JSON.parse(request.options.body).to, [{ email: "user@example.com" }]);
+  assert.equal(responseBodyCanceled, true);
 });
 
 test("sendByBrevo reports only the upstream status on failure", async () => {
@@ -132,4 +143,23 @@ test("sendByBrevo reports only the upstream status on failure", async () => {
   );
   assert.equal(responseBodyRead, false);
   assert.equal(responseBodyCanceled, true);
+});
+
+test("healthcheck verifies the certificate chain and configured hostname", () => {
+  const options = createTlsOptions({
+    SMTP_PORT: "2465",
+    SMTP_HOSTNAME: "smtp.test.invalid"
+  });
+
+  assert.equal(options.host, "127.0.0.1");
+  assert.equal(options.port, 2465);
+  assert.equal(options.servername, "smtp.test.invalid");
+  assert.equal(options.rejectUnauthorized, true);
+});
+
+test("healthcheck rejects an invalid SMTP port", () => {
+  assert.throws(
+    () => createTlsOptions({ SMTP_PORT: "65536" }),
+    /SMTP_PORT must be an integer between 1 and 65535/
+  );
 });
