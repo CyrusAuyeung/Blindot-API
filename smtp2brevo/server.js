@@ -121,10 +121,13 @@ async function sendByBrevo(parsed, recipients, config, fetchImpl = globalThis.fe
     signal: AbortSignal.timeout(config.brevoTimeoutMs)
   });
 
+  // The response payload is not used. Explicitly cancel it on both success
+  // and failure so undici can release the underlying connection promptly.
+  if (response.body && typeof response.body.cancel === "function") {
+    await response.body.cancel().catch(() => undefined);
+  }
+
   if (!response.ok) {
-    if (response.body && typeof response.body.cancel === "function") {
-      await response.body.cancel().catch(() => undefined);
-    }
     const error = new Error(`Brevo API request failed with status ${response.status}`);
     error.code = "BREVO_HTTP_ERROR";
     error.status = response.status;
