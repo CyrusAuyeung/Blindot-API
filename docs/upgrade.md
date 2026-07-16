@@ -1,52 +1,54 @@
-# Upgrade Notes
+# Upgrade And Rollback
 
-Use pinned image tags for predictable Sub2API upgrades.
+A GitHub update does not update production. Promotion to a deployment host must be an explicit, reviewed operation.
+
+## Before Upgrading
+
+1. Read the Sub2API release and migration notes.
+2. Record the current Git revision, image IDs, and health state.
+3. Create and verify a PostgreSQL backup.
+4. Review the repository diff and resolved Compose model without publishing secrets.
+5. Run `sh scripts/preflight.sh`.
 
 ## Upgrade Sub2API
 
-Edit `docker-compose.yml` and set the desired Sub2API image tag.
+Set the reviewed image tag in the private `.env`:
 
-Then run:
+```env
+SUB2API_IMAGE=weishaw/sub2api:<reviewed-version>
+```
+
+Then change only the application service:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --no-deps sub2api
 ```
 
-## Check Status
+Check container health, migrations, logs, login, and representative API requests before declaring success.
+
+## Upgrade smtp2brevo
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
-docker logs --tail=100 sub2api
-docker logs --tail=100 smtp2brevo
+cd smtp2brevo
+npm ci --ignore-scripts
+npm test
+cd ..
+
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml build --pull smtp2brevo
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --no-deps smtp2brevo
 ```
 
-## Backup Before Upgrading
+Send a test email after the health check passes.
 
-Back up configuration files and database data before upgrading production deployments.
+## Database And Redis Images
 
-At minimum, back up:
-
-```text
-.env
-.smtp2brevo.env
-docker-compose.yml
-docker-compose.smtp.yml
-PostgreSQL database dump
-```
-
-## Dangerous Commands
-
-Do not run this on production unless you intentionally want to delete volumes and data:
-
-```bash
-docker compose down -v
-```
+Upgrade PostgreSQL and Redis separately from the application. A major PostgreSQL upgrade requires a tested logical restore or `pg_upgrade` plan; changing the image tag alone is not a migration strategy.
 
 ## Rollback
 
-To roll back, restore the previous image tag in `docker-compose.yml` and recreate Sub2API:
+For a code-only failure with no incompatible data migration, restore the previous `SUB2API_IMAGE` value and recreate only Sub2API.
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
-```
+If the new version changed the schema incompatibly, an old image may not work with the new database. Restore the matching pre-upgrade database backup in an isolated recovery procedure. Confirm the rollback path from upstream release notes before the upgrade, not during the incident.
+
+Do not use `docker compose down -v` during upgrades or rollback.

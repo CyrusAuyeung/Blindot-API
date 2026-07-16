@@ -1,0 +1,81 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  repository:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: smtp2brevo/package-lock.json
+
+      - name: Lint Markdown
+        run: npx --yes markdownlint-cli2@0.23.0 "**/*.md" ".github/**/*.md" "#smtp2brevo/node_modules/**"
+
+      - name: Install relay dependencies
+        working-directory: smtp2brevo
+        run: npm ci --ignore-scripts
+
+      - name: Check and test relay
+        working-directory: smtp2brevo
+        run: |
+          npm run check
+          npm test
+          npm audit --omit=dev
+
+      - name: Check public repository safety
+        run: |
+          sh -n scripts/check-public-safe.sh
+          sh -n scripts/preflight.sh
+          sh scripts/check-public-safe.sh
+
+      - name: Validate Compose and deployment preflight
+        run: |
+          cp .env.example .env
+          cp .smtp2brevo.env.example .smtp2brevo.env
+
+          if POSTGRES_PASSWORD=validation-only docker compose --env-file /dev/null \
+            -f docker-compose.yml -f docker-compose.smtp.yml config --quiet 2>config-error.log; then
+            echo "Compose unexpectedly accepted a missing configuration version" >&2
+            exit 1
+          fi
+          grep -q BLINDOT_DEPLOY_CONFIG_VERSION config-error.log
+
+          sed -i \
+            -e 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-postgres-password/' \
+            -e 's/^REDIS_PASSWORD=.*/REDIS_PASSWORD=ci-redis-password/' \
+            -e 's/^JWT_SECRET=.*/JWT_SECRET=ci-jwt-secret/' \
+            -e 's/^TOTP_ENCRYPTION_KEY=.*/TOTP_ENCRYPTION_KEY=ci-totp-key/' \
+            -e 's/^ADMIN_EMAIL=.*/ADMIN_EMAIL=admin@test.invalid/' \
+            -e 's/^SMTP_HOSTNAME=.*/SMTP_HOSTNAME=smtp.test.invalid/' \
+            .env
+          sed -i \
+            -e 's/^BREVO_API_KEY=.*/BREVO_API_KEY=ci-brevo-key/' \
+            -e 's/^FROM_EMAIL=.*/FROM_EMAIL=noreply@test.invalid/' \
+            -e 's/^SMTP_AUTH_PASS=.*/SMTP_AUTH_PASS=ci-smtp-password/' \
+            .smtp2brevo.env
+
+          CHECK_TLS_CERTIFICATES=0 sh scripts/preflight.sh
+
+      - name: Build mail relay image
+        run: docker build --tag smtp2brevo:ci ./smtp2brevo

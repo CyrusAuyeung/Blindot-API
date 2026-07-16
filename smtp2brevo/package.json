@@ -1,10 +1,25 @@
 {
   "name": "smtp2brevo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
+  "description": "Authenticated TLS SMTP relay that delivers mail through the Brevo HTTPS API",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CyrusAuyeung/Blindot-API.git",
+    "directory": "smtp2brevo"
+  },
   "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check healthcheck.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
-    "mailparser": "^3.7.2",
-    "smtp-server": "^3.13.6"
+    "mailparser": "^3.9.14",
+    "smtp-server": "^3.19.2"
   }
 }
