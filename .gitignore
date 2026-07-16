@@ -1,6 +1,16 @@
 .env
 .smtp2brevo.env
+*.env
+*.env.*
 *.env.local
+.env.*
+.smtp2brevo.env.*
+.envrc
+.direnv/
+!.env.example
+!.smtp2brevo.env.example
+/config.yaml
+/config.yml
 
 data/
 backup/
@@ -16,6 +26,18 @@ redis_data/
 
 *.pem
 *.key
+*.p12
+*.pfx
+*.jks
+*.db
+*.sqlite
+*.sqlite3
+id_rsa
+id_ed25519
 smtp2brevo/certs/
+smtp2brevo/node_modules/
+
+*.log
+coverage/
 
 .DS_Store

@@ -30,8 +30,22 @@ body:
     validations:
       required: true
   - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe what should have happened.
+    validations:
+      required: true
+  - type: textarea
     id: logs
     attributes:
       label: Logs
       description: Paste relevant logs after removing secrets.
       render: shell
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, private addresses, user data, and message content.
+          required: true

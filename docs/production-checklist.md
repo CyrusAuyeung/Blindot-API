@@ -1,44 +1,57 @@
 # Production Checklist
 
-Use this checklist before exposing the service publicly.
+## Release And Configuration
 
-## DNS And HTTPS
+- [ ] Deployment uses a reviewed Git revision with a clean worktree.
+- [ ] `SUB2API_IMAGE` is an explicit reviewed version.
+- [ ] `.env` and `.smtp2brevo.env` contain no example placeholders and use mode `0600`.
+- [ ] `sh scripts/preflight.sh` passes.
+- [ ] The rendered Compose configuration was validated without publishing it.
 
-- [ ] Public domain points to the server.
-- [ ] HTTPS certificate is installed and renews automatically.
-- [ ] Reverse proxy forwards requests to Sub2API.
-- [ ] Internal service ports are not publicly exposed unless required.
+## Network And HTTPS
 
-## Secrets
+- [ ] `BIND_HOST=127.0.0.1` unless a documented firewall design requires otherwise.
+- [ ] Only required public ports are reachable.
+- [ ] PostgreSQL, Redis, and smtp2brevo are not publicly exposed.
+- [ ] API HTTPS certificate is valid and renews automatically.
+- [ ] `SMTP_HOSTNAME` matches a valid relay certificate.
+- [ ] Reverse-proxy request-size and streaming timeout settings match the application.
+- [ ] CDN or proxy client-IP trust is explicitly configured.
 
-- [ ] `POSTGRES_PASSWORD` is strong and unique.
-- [ ] `JWT_SECRET` is set and stable.
-- [ ] `TOTP_ENCRYPTION_KEY` is set and stable if 2FA is used.
-- [ ] Mail provider API key is stored only in local environment files.
-- [ ] `.env` and `.smtp2brevo.env` are not committed.
+## Secrets And Access
 
-## Data
+- [ ] Database, Redis, JWT, TOTP, admin, SMTP, and provider credentials are strong and independent.
+- [ ] Administrator MFA and recovery procedures are configured.
+- [ ] Deployment host, SSH, Docker, and backup access follow least privilege.
+- [ ] Credential rotation owners and procedures are documented.
 
-- [ ] PostgreSQL backup procedure is tested.
-- [ ] Backup files are stored outside the public repository.
-- [ ] Restore procedure is documented for the deployment.
+## Data And Recovery
 
-## Mail
-
-- [ ] Sending domain is verified with the mail provider.
-- [ ] SPF, DKIM, and DMARC are configured.
-- [ ] Test email succeeds from the application dashboard.
-- [ ] Password reset email succeeds.
+- [ ] A fresh PostgreSQL logical backup exists outside the host.
+- [ ] Backup encryption, access control, retention, and integrity checks are in place.
+- [ ] A restore has been tested against the current release.
+- [ ] Disk-space and certificate-expiry monitoring is configured.
+- [ ] Rollback compatibility and migration notes were reviewed.
 
 ## Application
 
-- [ ] Admin account is secured.
-- [ ] Registration policy is configured.
-- [ ] Payment settings are verified if payment is enabled.
-- [ ] Moderation or risk-control settings are configured if public users are allowed.
-- [ ] Logs are reviewed after startup.
+- [ ] `/health` succeeds locally and through public HTTPS.
+- [ ] Login and representative API requests succeed.
+- [ ] Registration, quota, billing, moderation, and risk-control policies were reviewed.
+- [ ] Insecure HTTP and private-host URL access are disabled unless explicitly required.
+- [ ] Application, reverse-proxy, CDN, and database log retention protects user privacy.
+
+## Mail
+
+- [ ] Sending domain and sender are verified.
+- [ ] SPF, DKIM, and DMARC pass.
+- [ ] Verification and password-reset emails succeed.
+- [ ] smtp2brevo is healthy and has no public port mapping.
+- [ ] Relay limits and Brevo timeout are appropriate for transactional mail.
 
 ## Repository
 
-- [ ] `./scripts/check-public-safe.sh` passes.
-- [ ] No production domain, IP, API key, private key, or database dump is committed.
+- [ ] `sh scripts/check-public-safe.sh` passes.
+- [ ] Relay syntax checks, tests, and dependency audit pass.
+- [ ] GitHub Actions validation passes.
+- [ ] The final diff contains no private domain, address, credential, certificate, dump, or runtime data.

@@ -3,6 +3,7 @@
 <p align="center">
   <a href="#中文"><img alt="中文" src="https://img.shields.io/badge/中文-默认-00A67E"></a>
   <a href="#english"><img alt="English" src="https://img.shields.io/badge/English-Available-1f6feb"></a>
+  <a href="https://github.com/CyrusAuyeung/Blindot-API/actions/workflows/validate.yml"><img alt="Validate" src="https://github.com/CyrusAuyeung/Blindot-API/actions/workflows/validate.yml/badge.svg"></a>
 </p>
 
 <a id="中文"></a>
@@ -12,6 +13,17 @@
 Blindot API 是一套基于 Sub2API 构建的 AI API 中转站，用于统一接入、调度和管理上游模型能力。
 
 本仓库提供 Blindot API 的公开部署编排与运维资料，覆盖 Docker Compose、PostgreSQL、Redis、smtp2brevo 邮件中转、Nginx 反向代理、升级、备份恢复和安全检查。生产环境中的域名、密钥、数据库密码、邮件服务凭据和运行时参数均通过本地环境文件注入。
+
+### 仓库边界
+
+- 本仓库不包含 Sub2API 核心源代码；核心应用通过 `SUB2API_IMAGE` 指定的版本化镜像运行。
+- 本地编辑、提交、PR 或推送不会自动改变 VPS 上的服务。本仓库只做验证 CI，不包含自动生产部署。
+- 只有运维人员把已审阅版本带到部署目录并明确执行部署命令时，线上状态才会变化。
+- `.env`、证书、数据库和运行目录只存在于部署环境，不进入 Git。
+
+架构与边界说明见 [docs/architecture.md](docs/architecture.md)，日常核查与部署命令的风险分级见 [docs/operations.md](docs/operations.md)。
+
+已有部署不能只把新 Compose 覆盖到旧目录；配置 v2 会拒绝未经审阅的旧环境文件，请先按 [docs/migration-v2.md](docs/migration-v2.md) 逐项迁移。
 
 ## 中转站能力
 
@@ -39,7 +51,7 @@ API 调用 Base URL：`https://api.blindot.org`
 
 当前控制台可选择并对外公告的模型清单如下：
 
-**GPT 系列模型**
+### GPT 系列模型
 
 GPT-5.6 系列：
 
@@ -64,17 +76,17 @@ GPT-5.2 系列：
 
 - `gpt-5.2`
 
-**Codex 模型**
+### Codex 模型
 
 - `codex-auto-review`
 
-**GPT Image 系列**
+### GPT Image 系列
 
 - `gpt-image-1`
 - `gpt-image-1.5`
 - `gpt-image-2`
 
-**Grok 系列模型**
+### Grok 系列模型
 
 Grok 4 系列：
 
@@ -147,6 +159,11 @@ docker-compose.smtp.yml         邮件中转扩展编排
 .env.example                    Sub2API 环境变量示例
 .smtp2brevo.env.example         smtp2brevo 环境变量示例
 smtp2brevo/                     邮件中转服务源码
+smtp2brevo/test/                邮件中转单元测试
+.github/workflows/validate.yml  仓库验证 CI（不部署）
+docs/architecture.md            架构与仓库边界
+docs/operations.md              运维核查与操作手册
+docs/migration-v2.md            现有部署迁移到规范化配置
 docs/deployment.md              部署说明
 docs/configuration.md           配置说明
 docs/smtp2brevo.md              邮件中转说明
@@ -156,6 +173,7 @@ docs/upgrade.md                 升级说明
 docs/security.md                安全说明
 docs/production-checklist.md    上线前检查清单
 scripts/check-public-safe.sh     公开仓库安全检查脚本
+scripts/preflight.sh             生产部署前只读检查
 ```
 
 ## 前置要求
@@ -178,10 +196,16 @@ cp .smtp2brevo.env.example .smtp2brevo.env
 
 编辑 `.env` 与 `.smtp2brevo.env`，填入部署所需的域名、数据库密码、JWT 密钥、邮件服务密钥和运行参数。
 
+准备 DNS、HTTPS 和 SMTP 证书后，先做不会启动容器的预检：
+
+```bash
+sh scripts/preflight.sh
+```
+
 启动完整服务：
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --build
 ```
 
 查看状态：
@@ -193,8 +217,7 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
 查看日志：
 
 ```bash
-docker logs --tail=100 sub2api
-docker logs --tail=100 smtp2brevo
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml logs --tail=100 sub2api smtp2brevo
 ```
 
 ## 部署流程
@@ -202,12 +225,12 @@ docker logs --tail=100 smtp2brevo
 推荐按以下顺序部署：
 
 1. 准备 `.env` 与 `.smtp2brevo.env`
-2. 启动 PostgreSQL、Redis、Sub2API 和 smtp2brevo
-3. 配置反向代理和 HTTPS
-4. 在 Sub2API 后台配置 SMTP
-5. 发送测试邮件
+2. 准备 DNS、反向代理、HTTPS 和 SMTP 证书
+3. 运行安全检查和部署预检
+4. 启动 PostgreSQL、Redis、Sub2API 和 smtp2brevo
+5. 在 Sub2API 后台配置 SMTP 并发送测试邮件
 6. 配置支付、风控、注册和用户策略
-7. 上线前运行安全检查和备份流程
+7. 验证备份、恢复和回滚流程后再开放流量
 
 详细步骤见 [docs/deployment.md](docs/deployment.md)。
 
@@ -240,8 +263,10 @@ Nginx 示例见 [docs/nginx.md](docs/nginx.md)。
 升级 Sub2API：
 
 ```bash
+# 先在私有 .env 中把 SUB2API_IMAGE 改为已审阅版本
+sh scripts/preflight.sh
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --no-deps sub2api
 ```
 
 更多升级和回滚说明见 [docs/upgrade.md](docs/upgrade.md)。
@@ -251,7 +276,7 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api sm
 提交前运行：
 
 ```bash
-./scripts/check-public-safe.sh
+sh scripts/check-public-safe.sh
 ```
 
 安全说明见 [docs/security.md](docs/security.md)。上线前检查见 [docs/production-checklist.md](docs/production-checklist.md)。
@@ -271,6 +296,17 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api sm
 Blindot API is an AI API relay gateway built on top of Sub2API. It provides a unified gateway layer for connecting, routing, and operating upstream AI model providers.
 
 This repository contains the public deployment orchestration and operations material for Blindot API, including Docker Compose, PostgreSQL, Redis, the smtp2brevo mail relay, Nginx reverse proxy examples, upgrade notes, backup and restore notes, and safety checks. Production-specific domains, credentials, database passwords, mail provider keys, and runtime values are injected through local environment files.
+
+### Repository Boundary
+
+- This repository does not contain the Sub2API core source; the application runs from the versioned image selected by `SUB2API_IMAGE`.
+- Local edits, commits, pull requests, and pushes do not automatically change the VPS. CI validates only and contains no production deployment job.
+- Runtime changes occur only when an operator intentionally promotes a reviewed revision and runs deployment commands on a deployment host.
+- Private environment files, certificates, databases, and runtime directories stay outside Git.
+
+See [docs/architecture.md](docs/architecture.md) for the boundary and [docs/operations.md](docs/operations.md) for read-only versus state-changing operations.
+
+Do not copy the new Compose files over an existing deployment. Configuration v2 rejects an unreviewed legacy environment; migrate it key by key with [docs/migration-v2.md](docs/migration-v2.md).
 
 ## Relay Capabilities
 
@@ -298,7 +334,7 @@ API base URL: `https://api.blindot.org`
 
 Current console-selectable and publicly announced models include:
 
-**GPT models**
+### GPT models
 
 GPT-5.6 series:
 
@@ -323,17 +359,17 @@ GPT-5.2 series:
 
 - `gpt-5.2`
 
-**Codex models**
+### Codex models
 
 - `codex-auto-review`
 
-**GPT Image models**
+### GPT Image models
 
 - `gpt-image-1`
 - `gpt-image-1.5`
 - `gpt-image-2`
 
-**Grok models**
+### Grok models
 
 Grok 4 series:
 
@@ -406,6 +442,11 @@ docker-compose.smtp.yml         Mail relay extension stack
 .env.example                    Example Sub2API environment file
 .smtp2brevo.env.example         Example smtp2brevo environment file
 smtp2brevo/                     Mail relay source code
+smtp2brevo/test/                Mail relay unit tests
+.github/workflows/validate.yml  Validation CI (never deploys)
+docs/architecture.md            Architecture and repository boundary
+docs/operations.md              Inspection and operations runbook
+docs/migration-v2.md            Existing-deployment migration guide
 docs/deployment.md              Deployment guide
 docs/configuration.md           Configuration notes
 docs/smtp2brevo.md              Mail relay notes
@@ -415,6 +456,7 @@ docs/upgrade.md                 Upgrade notes
 docs/security.md                Security notes
 docs/production-checklist.md    Production checklist
 scripts/check-public-safe.sh     Public repository safety check
+scripts/preflight.sh             Read-only production preflight
 ```
 
 ## Requirements
@@ -437,10 +479,16 @@ cp .smtp2brevo.env.example .smtp2brevo.env
 
 Edit `.env` and `.smtp2brevo.env` with your own domain, database password, JWT secret, mail provider key, and runtime settings.
 
+After DNS, HTTPS, and the SMTP certificate are ready, run the non-deploying preflight:
+
+```bash
+sh scripts/preflight.sh
+```
+
 Start the full stack:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --build
 ```
 
 Check status:
@@ -452,8 +500,7 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml ps
 Check logs:
 
 ```bash
-docker logs --tail=100 sub2api
-docker logs --tail=100 smtp2brevo
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml logs --tail=100 sub2api smtp2brevo
 ```
 
 ## Deployment Flow
@@ -461,12 +508,12 @@ docker logs --tail=100 smtp2brevo
 Recommended deployment order:
 
 1. Prepare `.env` and `.smtp2brevo.env`
-2. Start PostgreSQL, Redis, Sub2API, and smtp2brevo
-3. Configure reverse proxy and HTTPS
-4. Configure SMTP in the Sub2API dashboard
-5. Send a test email
+2. Prepare DNS, reverse proxy, HTTPS, and the SMTP certificate
+3. Run repository safety checks and deployment preflight
+4. Start PostgreSQL, Redis, Sub2API, and smtp2brevo
+5. Configure SMTP in Sub2API and send a test email
 6. Configure payment, moderation, registration, and user policies
-7. Run safety checks and backup procedures before production use
+7. Verify backup, restore, and rollback before opening traffic
 
 See [docs/deployment.md](docs/deployment.md).
 
@@ -499,8 +546,10 @@ See [docs/backup-restore.md](docs/backup-restore.md).
 Upgrade Sub2API:
 
 ```bash
+# First set SUB2API_IMAGE in the private .env to a reviewed version
+sh scripts/preflight.sh
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
-docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d sub2api smtp2brevo
+docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --no-deps sub2api
 ```
 
 See [docs/upgrade.md](docs/upgrade.md) for upgrade and rollback notes.
@@ -510,7 +559,7 @@ See [docs/upgrade.md](docs/upgrade.md) for upgrade and rollback notes.
 Run before committing:
 
 ```bash
-./scripts/check-public-safe.sh
+sh scripts/check-public-safe.sh
 ```
 
 See [docs/security.md](docs/security.md). See [docs/production-checklist.md](docs/production-checklist.md) before production use.

@@ -1,26 +1,53 @@
 services:
-  sub2api:
-    extra_hosts:
-      - "smtp.example.com:172.18.0.250"
-
   smtp2brevo:
+    image: ${SMTP_RELAY_IMAGE:-sub2api-smtp2brevo:local}
     build:
       context: ./smtp2brevo
     container_name: smtp2brevo
     restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    pids_limit: 100
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
     env_file:
-      - .smtp2brevo.env
-    expose:
-      - "8025"
+      - ./.smtp2brevo.env
+    environment:
+      # SMTP_HOSTNAME lives in the main .env because Compose also uses it as
+      # the Docker-network DNS alias presented to the Sub2API SMTP client.
+      SMTP_HOSTNAME: ${SMTP_HOSTNAME:-smtp.example.com}
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # Mount only this hostname's certificate material, not every host key.
+      - type: bind
+        source: /etc/letsencrypt/live/${SMTP_HOSTNAME:-smtp.example.com}
+        target: /etc/letsencrypt/live/${SMTP_HOSTNAME:-smtp.example.com}
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /etc/letsencrypt/archive/${SMTP_HOSTNAME:-smtp.example.com}
+        target: /etc/letsencrypt/archive/${SMTP_HOSTNAME:-smtp.example.com}
+        read_only: true
+        bind:
+          create_host_path: false
     networks:
       sub2api-network:
-        ipv4_address: 172.18.0.250
         aliases:
           - smtp2brevo
-
-networks:
-  sub2api-network:
-    external: true
-    name: sub2api-deploy_sub2api-network
+          - ${SMTP_HOSTNAME:-smtp.example.com}
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "${DOCKER_LOG_MAX_SIZE:-50m}"
+        max-file: "${DOCKER_LOG_MAX_FILES:-5}"
