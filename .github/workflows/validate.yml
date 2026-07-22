@@ -56,12 +56,28 @@ jobs:
           cp .env.example .env
           cp .smtp2brevo.env.example .smtp2brevo.env
 
-          if POSTGRES_PASSWORD=validation-only docker compose --env-file /dev/null \
+          printf '%s\n' \
+            'BLINDOT_RUNTIME_LAYOUT_VERSION=1' \
+            'POSTGRES_PASSWORD=validation-only' \
+            > missing-deploy-gate.env
+          if docker compose --env-file missing-deploy-gate.env \
             -f docker-compose.yml -f docker-compose.smtp.yml config --quiet 2>config-error.log; then
-            echo "Compose unexpectedly accepted a missing configuration version" >&2
+            echo "Compose unexpectedly accepted a missing deployment configuration gate" >&2
             exit 1
           fi
           grep -q BLINDOT_DEPLOY_CONFIG_VERSION config-error.log
+
+          printf '%s\n' \
+            'BLINDOT_DEPLOY_CONFIG_VERSION=2' \
+            'POSTGRES_PASSWORD=validation-only' \
+            > missing-runtime-gate.env
+          if docker compose --env-file missing-runtime-gate.env \
+            -f docker-compose.yml -f docker-compose.smtp.yml config --quiet 2>config-error.log; then
+            echo "Compose unexpectedly accepted a missing runtime layout gate" >&2
+            exit 1
+          fi
+          grep -q BLINDOT_RUNTIME_LAYOUT_VERSION config-error.log
+          rm -f missing-deploy-gate.env missing-runtime-gate.env config-error.log
 
           sed -i \
             -e 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-postgres-password/' \
