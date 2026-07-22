@@ -17,7 +17,8 @@ Compose automatically uses `.env` for interpolation, and `docker-compose.yml` al
 
 | Setting | Meaning | Production guidance |
 | --- | --- | --- |
-| `SUB2API_IMAGE` | Core application image | Keep an explicit tested patch tag |
+| `BLINDOT_RUNTIME_LAYOUT_VERSION` | Persistent executable migration gate | Set to `1` only after preserving an existing runtime |
+| `SUB2API_IMAGE` | Core application image | Pin a tested patch tag and repository digest |
 | `POSTGRES_IMAGE`, `REDIS_IMAGE` | Data-service images | Change major versions only with a migration plan |
 | `BIND_HOST` | Host interface for Sub2API | Keep `127.0.0.1` behind a local proxy |
 | `SERVER_PORT` | Host-side application port | Keep aligned with the reverse proxy |
@@ -70,4 +71,4 @@ Do not publish the full rendered configuration because it can contain resolved c
 
 ## Runtime Data
 
-`data/`, `postgres_data/`, `redis_data/`, logs, certificates, dumps, and backup archives are runtime assets and must stay outside Git. Use [backup-restore.md](backup-restore.md) for consistent backup guidance.
+`data/`, `runtime/`, `postgres_data/`, `redis_data/`, logs, certificates, dumps, and backup archives are runtime assets and must stay outside Git. `runtime/sub2api` is the executable used by the web updater; it must remain a regular executable file owned by the container runtime user. See [runtime-image-sync.md](runtime-image-sync.md) before migrating an existing container and [backup-restore.md](backup-restore.md) for consistent backup guidance.

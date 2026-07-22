@@ -1,0 +1,14 @@
+[Unit]
+Description=Reconcile Blindot Sub2API runtime with its official container image
+After=docker.service nginx.service network-online.target
+Wants=network-online.target
+Requires=docker.service nginx.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/sub2api-deploy
+ExecStart=/root/sub2api-deploy/scripts/reconcile-sub2api-image.sh --apply
+TimeoutStartSec=10min
+UMask=0077
+Nice=10
+IOSchedulingClass=idle

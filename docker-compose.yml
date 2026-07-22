@@ -13,10 +13,12 @@ x-default-ulimits: &default-ulimits
 
 services:
   sub2api:
-    image: ${SUB2API_IMAGE:-weishaw/sub2api:0.1.113}
+    image: ${SUB2API_IMAGE:-weishaw/sub2api:0.1.163@sha256:ac3013098153fd276e7fb0723bbb7032f290e1de018dd7b21a238c298064ff5d}
     container_name: sub2api
     labels:
       org.blindot.deploy.config-version: ${BLINDOT_DEPLOY_CONFIG_VERSION:?Set BLINDOT_DEPLOY_CONFIG_VERSION=2 after reviewing the v2 migration guide}
+      org.blindot.runtime-layout-version: ${BLINDOT_RUNTIME_LAYOUT_VERSION:?Preserve the current executable, then set BLINDOT_RUNTIME_LAYOUT_VERSION=1 per docs/runtime-image-sync.md}
+      org.blindot.runtime-binary: /app/runtime/sub2api
     restart: unless-stopped
     init: true
     stop_grace_period: 30s
@@ -27,8 +29,13 @@ services:
     ports:
       # Keep the application behind the local reverse proxy by default.
       - "${BIND_HOST:-127.0.0.1}:${SERVER_PORT:-8080}:8080"
+    entrypoint: ["/app/blindot-runtime-entrypoint.sh"]
+    command: ["/app/runtime/sub2api"]
     volumes:
       - ./data:/app/data
+      # Keep web-console binary updates outside the container writable layer.
+      - ./runtime:/app/runtime
+      - ./scripts/sub2api-runtime-entrypoint.sh:/app/blindot-runtime-entrypoint.sh:ro
       # Optional custom application configuration:
       # - ./config.yaml:/app/data/config.yaml:ro
     environment:

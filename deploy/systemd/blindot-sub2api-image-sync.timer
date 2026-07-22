@@ -1,0 +1,12 @@
+[Unit]
+Description=Check for a web-approved Sub2API image reconciliation
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=10min
+RandomizedDelaySec=60
+Persistent=true
+Unit=blindot-sub2api-image-sync.service
+
+[Install]
+WantedBy=timers.target

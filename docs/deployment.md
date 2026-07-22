@@ -15,7 +15,7 @@
 Use a clean, reviewed Git revision rather than an arbitrary working tree:
 
 ```bash
-mkdir -p data postgres_data redis_data
+mkdir -p data runtime postgres_data redis_data
 cp .env.example .env
 cp .smtp2brevo.env.example .smtp2brevo.env
 chmod 600 .env .smtp2brevo.env
@@ -65,6 +65,8 @@ curl --fail --silent --show-error http://127.0.0.1:8080/health
 ```
 
 Also verify the public HTTPS health endpoint through the reverse proxy. Do not continue a cutover when a required container is unhealthy.
+
+For an existing container that has already used the web updater, preserve its running executable before adopting the `runtime/` mount. Follow [runtime-image-sync.md](runtime-image-sync.md); starting the new Compose definition with an empty runtime directory would otherwise seed it from the selected image.
 
 ## 7. Configure Application Mail
 

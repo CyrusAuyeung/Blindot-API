@@ -9,6 +9,7 @@ A recoverable deployment normally needs:
 - The exact Git revision and image tags
 - Reverse-proxy configuration and certificate recovery procedure
 - `data/` if it contains application-managed files not stored in PostgreSQL
+- `runtime/sub2api` or enough release metadata and hashes to reproduce it
 - Redis persistence only if the deployment relies on Redis state that cannot be rebuilt
 
 Store backups outside the repository and outside the deployment host. Encrypt them, restrict access, and define retention.

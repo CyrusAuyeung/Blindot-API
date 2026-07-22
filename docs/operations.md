@@ -49,6 +49,8 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml logs --tail=100 
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml logs --tail=100 smtp2brevo
 docker inspect --format '{{json .State.Health}}' sub2api
 curl --fail --silent --show-error http://127.0.0.1:8080/health
+systemctl list-timers blindot-sub2api-image-sync.timer
+journalctl -u blindot-sub2api-image-sync.service -n 100 --no-pager
 ```
 
 Avoid publishing complete `docker compose config` output: it may contain resolved secrets.
@@ -65,6 +67,8 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d
 
 Review health and logs immediately afterward. A repository update should first be tested in a separate checkout or staging directory; do not overwrite a working production directory with an unreviewed worktree.
 
+Web-console application updates and container-image reconciliation are separate operations. `scripts/reconcile-sub2api-image.sh` stages a matching official image; `--apply` performs the canary cutover and primary recreation. The optional systemd timer automates that host-side reconciliation without granting Docker access to the application. See [runtime-image-sync.md](runtime-image-sync.md).
+
 ## Routine Checks
 
 - Confirm all services are healthy.
@@ -72,6 +76,7 @@ Review health and logs immediately afterward. A repository update should first b
 - Review error-rate, provider, database, and mail-relay logs without copying personal data into issues.
 - Confirm disk space, PostgreSQL backup freshness, and certificate renewal.
 - Review pinned image updates and Dependabot pull requests.
+- Confirm the image-sync timer has no repeated failures and no abandoned canary.
 - Test restoration periodically; a backup that has never been restored is unverified.
 
 ## Incident Priorities

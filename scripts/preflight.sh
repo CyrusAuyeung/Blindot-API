@@ -70,17 +70,32 @@ positive_integer() {
 }
 
 require_file .env
+require_file scripts/sub2api-runtime-entrypoint.sh
+require_file scripts/reconcile-sub2api-image.sh
 if [ "$enable_smtp_relay" = "1" ]; then
   require_file .smtp2brevo.env
 fi
 
-for key in BLINDOT_DEPLOY_CONFIG_VERSION POSTGRES_PASSWORD REDIS_PASSWORD JWT_SECRET TOTP_ENCRYPTION_KEY ADMIN_EMAIL; do
+for script in scripts/sub2api-runtime-entrypoint.sh scripts/reconcile-sub2api-image.sh; do
+  if [ ! -x "$script" ]; then
+    echo "Required deployment script is not executable: $script" >&2
+    exit 1
+  fi
+done
+
+for key in BLINDOT_DEPLOY_CONFIG_VERSION BLINDOT_RUNTIME_LAYOUT_VERSION POSTGRES_PASSWORD REDIS_PASSWORD JWT_SECRET TOTP_ENCRYPTION_KEY ADMIN_EMAIL; do
   require_value .env "$key"
 done
 
 config_version=$(read_env_value .env BLINDOT_DEPLOY_CONFIG_VERSION)
 if [ "$config_version" != "2" ]; then
   echo "BLINDOT_DEPLOY_CONFIG_VERSION must be 2 after completing docs/migration-v2.md" >&2
+  exit 1
+fi
+
+runtime_layout_version=$(read_env_value .env BLINDOT_RUNTIME_LAYOUT_VERSION)
+if [ "$runtime_layout_version" != "1" ]; then
+  echo "BLINDOT_RUNTIME_LAYOUT_VERSION must be 1 after completing docs/runtime-image-sync.md" >&2
   exit 1
 fi
 

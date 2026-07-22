@@ -9,7 +9,7 @@ This repository is the public deployment and operations layer for Blindot API. I
 - Environment-variable templates, validation scripts, and operational documentation
 - CI checks that validate the repository without deploying it
 
-The Sub2API application source is not part of this repository. It is consumed as the versioned container image selected by `SUB2API_IMAGE`.
+The Sub2API application source is not part of this repository. It is consumed as the versioned container image selected by `SUB2API_IMAGE`. The executable launched by that image lives in the ignored `runtime/` directory so an operator-approved web update survives container recreation.
 
 ## What Changes Production
 
@@ -23,7 +23,7 @@ Git repository                 Deployment host
 Compose and relay source       Checked-out/released revision
 Example environment files      Private .env files
 Documentation and CI           Certificates and reverse proxy
-No runtime data                data/, postgres_data/, redis_data/
+No runtime data                data/, runtime/, postgres_data/, redis_data/
 ```
 
 ## Request And Data Flow
@@ -61,17 +61,20 @@ The main `.env` has two roles:
 
 The private `.smtp2brevo.env` is injected only into the relay. Neither file belongs in Git.
 
-Version 2 adds `BLINDOT_DEPLOY_CONFIG_VERSION=2` as an explicit compatibility gate. An older deployment environment cannot render the new stack until an operator has reviewed the migration guide.
+Version 2 adds `BLINDOT_DEPLOY_CONFIG_VERSION=2` as an explicit compatibility gate. An older deployment environment cannot render the new stack until an operator has reviewed the migration guide. `BLINDOT_RUNTIME_LAYOUT_VERSION=1` separately confirms that an existing web-updated executable was preserved before enabling the persistent runtime mount.
 
 ## Persistence
 
 The stack uses bind-mounted directories so a deployment remains inspectable and portable:
 
 - `data/` for Sub2API application data
+- `runtime/` for the web-updatable Sub2API executable
 - `postgres_data/` for PostgreSQL
 - `redis_data/` for Redis persistence
 
 These directories are deliberately ignored by Git. PostgreSQL should be backed up with `pg_dump`; copying a live database directory is not a substitute for a consistent database backup.
+
+The runtime executable and the configured image are reconciled on the deployment host, not inside the application container. The host-side reconciler requires an exact SHA-256 match with the latest official image, pins its immutable digest, and uses a temporary Nginx canary during recreation. See [runtime-image-sync.md](runtime-image-sync.md).
 
 ## Compatibility Principles
 

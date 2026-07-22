@@ -3,7 +3,9 @@
 ## Release And Configuration
 
 - [ ] Deployment uses a reviewed Git revision with a clean worktree.
-- [ ] `SUB2API_IMAGE` is an explicit reviewed version.
+- [ ] `BLINDOT_RUNTIME_LAYOUT_VERSION=1` was set only after preserving the current executable.
+- [ ] `SUB2API_IMAGE` is an explicit reviewed version and immutable digest.
+- [ ] `runtime/sub2api` is ignored by Git, persistent, executable, and owned by the runtime user.
 - [ ] `.env` and `.smtp2brevo.env` contain no example placeholders and use mode `0600`.
 - [ ] `sh scripts/preflight.sh` passes.
 - [ ] The rendered Compose configuration was validated without publishing it.
@@ -32,6 +34,7 @@
 - [ ] A restore has been tested against the current release.
 - [ ] Disk-space and certificate-expiry monitoring is configured.
 - [ ] Rollback compatibility and migration notes were reviewed.
+- [ ] Image reconciliation was tested with a verified backup and loopback canary.
 
 ## Application
 
@@ -54,4 +57,5 @@
 - [ ] `sh scripts/check-public-safe.sh` passes.
 - [ ] Relay syntax checks, tests, and dependency audit pass.
 - [ ] GitHub Actions validation passes.
+- [ ] The image-sync timer and its failure-recovery procedure are monitored.
 - [ ] The final diff contains no private domain, address, credential, certificate, dump, or runtime data.
