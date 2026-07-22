@@ -24,7 +24,7 @@ fi
 
 tracked_private_files=$(
   printf '%s\n' "$candidate_files" |
-    grep -E '(^|/)(data|backup|backups|postgres_data|redis_data|\.direnv)/|(^|/)(id_rsa|id_ed25519)$|\.(pem|key|p12|pfx|jks|sql|dump|db|sqlite|sqlite3|tar\.gz|sql\.gz)$' || true
+    grep -E '(^|/)(data|runtime|backup|backups|postgres_data|redis_data|\.direnv)/|(^|/)(id_rsa|id_ed25519)$|\.(pem|key|p12|pfx|jks|sql|dump|db|sqlite|sqlite3|tar\.gz|sql\.gz)$' || true
 )
 
 if [ -n "$tracked_private_files" ]; then
@@ -35,7 +35,7 @@ fi
 
 echo "Checking ignore rules for local secrets..."
 
-for path in .env production.env production.env.backup .env.before-upgrade .envrc .smtp2brevo.env .smtp2brevo.env.backup config.yaml config.yml private.key certificate.pem identity.p12 backup.dump runtime.sqlite3; do
+for path in .env production.env production.env.backup .env.before-upgrade .envrc .smtp2brevo.env .smtp2brevo.env.backup config.yaml config.yml private.key certificate.pem identity.p12 backup.dump runtime.sqlite3 runtime/sub2api; do
   if ! git check-ignore -q --no-index "$path"; then
     echo "Expected secret path is not ignored: $path" >&2
     exit 1
@@ -68,7 +68,7 @@ fi
 
 history_private_files=$(
   git log --all --name-only --pretty=format: |
-    grep -E '(^|/)\.env($|\.)|(^|/)\.smtp2brevo\.env($|\.)|(^|/)[^/]+\.env($|\.)|(^|/)\.envrc$|^config\.ya?ml$|(^|/)(data|backup|backups|postgres_data|redis_data|\.direnv)/|(^|/)(id_rsa|id_ed25519)$|\.(pem|key|p12|pfx|jks|sql|dump|db|sqlite|sqlite3|tar\.gz|sql\.gz)$' |
+    grep -E '(^|/)\.env($|\.)|(^|/)\.smtp2brevo\.env($|\.)|(^|/)[^/]+\.env($|\.)|(^|/)\.envrc$|^config\.ya?ml$|(^|/)(data|runtime|backup|backups|postgres_data|redis_data|\.direnv)/|(^|/)(id_rsa|id_ed25519)$|\.(pem|key|p12|pfx|jks|sql|dump|db|sqlite|sqlite3|tar\.gz|sql\.gz)$' |
     grep -vE '(^|/)\.env\.example$|(^|/)\.smtp2brevo\.env\.example$' |
     sort -u || true
 )

@@ -47,6 +47,8 @@ jobs:
         run: |
           sh -n scripts/check-public-safe.sh
           sh -n scripts/preflight.sh
+          sh -n scripts/sub2api-runtime-entrypoint.sh
+          sh -n scripts/reconcile-sub2api-image.sh
           sh scripts/check-public-safe.sh
 
       - name: Validate Compose and deployment preflight

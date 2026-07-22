@@ -1,6 +1,6 @@
 # Upgrade And Rollback
 
-A GitHub update does not update production. Promotion to a deployment host must be an explicit, reviewed operation.
+A GitHub update does not update production. Promotion to a deployment host must be an explicit, reviewed operation. A Sub2API web-console update changes the persistent runtime executable but does not mutate its immutable Docker image.
 
 ## Before Upgrading
 
@@ -15,7 +15,7 @@ A GitHub update does not update production. Promotion to a deployment host must 
 Set the reviewed image tag in the private `.env`:
 
 ```env
-SUB2API_IMAGE=weishaw/sub2api:<reviewed-version>
+SUB2API_IMAGE=weishaw/sub2api:<reviewed-version>@sha256:<reviewed-digest>
 ```
 
 Then change only the application service:
@@ -26,6 +26,8 @@ docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --no-deps 
 ```
 
 Check container health, migrations, logs, login, and representative API requests before declaring success.
+
+For deployments that allow web-console updates, use the persistent runtime mount and host-side reconciler described in [runtime-image-sync.md](runtime-image-sync.md). It only pins and recreates from an official image whose binary exactly matches the already approved runtime, and it keeps traffic on a validated canary during primary recreation.
 
 ## Upgrade smtp2brevo
 

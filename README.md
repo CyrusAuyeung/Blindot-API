@@ -16,7 +16,7 @@ Blindot API 是一套基于 Sub2API 构建的 AI API 中转站，用于统一接
 
 ### 仓库边界
 
-- 本仓库不包含 Sub2API 核心源代码；核心应用通过 `SUB2API_IMAGE` 指定的版本化镜像运行。
+- 本仓库不包含 Sub2API 核心源代码；核心应用通过 `SUB2API_IMAGE` 指定的版本化镜像运行，网页更新后的可执行文件保存在不进入 Git 的 `runtime/` 目录。
 - 本地编辑、提交、PR 或推送不会自动改变 VPS 上的服务。本仓库只做验证 CI，不包含自动生产部署。
 - 只有运维人员把已审阅版本带到部署目录并明确执行部署命令时，线上状态才会变化。
 - `.env`、证书、数据库和运行目录只存在于部署环境，不进入 Git。
@@ -170,10 +170,12 @@ docs/smtp2brevo.md              邮件中转说明
 docs/nginx.md                   反向代理示例
 docs/backup-restore.md          备份与恢复说明
 docs/upgrade.md                 升级说明
+docs/runtime-image-sync.md      网页更新与容器镜像安全同步
 docs/security.md                安全说明
 docs/production-checklist.md    上线前检查清单
 scripts/check-public-safe.sh     公开仓库安全检查脚本
 scripts/preflight.sh             生产部署前只读检查
+scripts/reconcile-sub2api-image.sh  镜像校验与旁路切换
 ```
 
 ## 前置要求
@@ -260,16 +262,18 @@ Nginx 示例见 [docs/nginx.md](docs/nginx.md)。
 
 ## 升级
 
-升级 Sub2API：
+手动升级 Sub2API：
 
 ```bash
-# 先在私有 .env 中把 SUB2API_IMAGE 改为已审阅版本
+# 先在私有 .env 中把 SUB2API_IMAGE 改为已审阅的 tag@digest
 sh scripts/preflight.sh
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --no-deps sub2api
 ```
 
-更多升级和回滚说明见 [docs/upgrade.md](docs/upgrade.md)。
+如果使用管理网页的在线更新，`runtime/` 挂载会保留更新后的程序；主机定时任务仅在它与官方最新镜像内的程序 SHA-256 完全一致后，才通过本机旁路容器无中断同步镜像标签和摘要。应用容器不会获得 Docker 权限。
+
+首次迁移、自动同步、监控和故障恢复见 [docs/runtime-image-sync.md](docs/runtime-image-sync.md)，常规升级和回滚说明见 [docs/upgrade.md](docs/upgrade.md)。
 
 ## 安全检查
 
@@ -299,7 +303,7 @@ This repository contains the public deployment orchestration and operations mate
 
 ### Repository Boundary
 
-- This repository does not contain the Sub2API core source; the application runs from the versioned image selected by `SUB2API_IMAGE`.
+- This repository does not contain the Sub2API core source; the application runs from the versioned image selected by `SUB2API_IMAGE`, while web-updated executables persist in the ignored `runtime/` directory.
 - Local edits, commits, pull requests, and pushes do not automatically change the VPS. CI validates only and contains no production deployment job.
 - Runtime changes occur only when an operator intentionally promotes a reviewed revision and runs deployment commands on a deployment host.
 - Private environment files, certificates, databases, and runtime directories stay outside Git.
@@ -453,10 +457,12 @@ docs/smtp2brevo.md              Mail relay notes
 docs/nginx.md                   Reverse proxy example
 docs/backup-restore.md          Backup and restore notes
 docs/upgrade.md                 Upgrade notes
+docs/runtime-image-sync.md      Web-update and image reconciliation
 docs/security.md                Security notes
 docs/production-checklist.md    Production checklist
 scripts/check-public-safe.sh     Public repository safety check
 scripts/preflight.sh             Read-only production preflight
+scripts/reconcile-sub2api-image.sh  Image verification and canary cutover
 ```
 
 ## Requirements
@@ -543,16 +549,18 @@ See [docs/backup-restore.md](docs/backup-restore.md).
 
 ## Upgrade
 
-Upgrade Sub2API:
+Upgrade Sub2API manually:
 
 ```bash
-# First set SUB2API_IMAGE in the private .env to a reviewed version
+# First set SUB2API_IMAGE in the private .env to a reviewed tag@digest
 sh scripts/preflight.sh
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml pull sub2api
 docker compose -f docker-compose.yml -f docker-compose.smtp.yml up -d --no-deps sub2api
 ```
 
-See [docs/upgrade.md](docs/upgrade.md) for upgrade and rollback notes.
+For web-console updates, the `runtime/` mount preserves the new executable. A host timer reconciles the image tag and digest through a loopback canary only when the runtime binary has exactly the same SHA-256 hash as the latest official image. The application container is never granted Docker access.
+
+See [docs/runtime-image-sync.md](docs/runtime-image-sync.md) for first migration, automated reconciliation, monitoring, and recovery. See [docs/upgrade.md](docs/upgrade.md) for general upgrade and rollback notes.
 
 ## Safety Check
 

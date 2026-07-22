@@ -13,6 +13,7 @@
 /config.yml
 
 data/
+runtime/
 backup/
 backups/
 postgres_data/
