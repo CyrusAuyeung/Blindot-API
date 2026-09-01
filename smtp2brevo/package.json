@@ -20,6 +20,6 @@
   },
   "dependencies": {
     "mailparser": "^3.9.14",
-    "smtp-server": "^3.19.2"
+    "smtp-server": "^3.19.4"
   }
 }
