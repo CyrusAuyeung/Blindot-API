@@ -19,7 +19,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "mailparser": "^3.9.14",
+    "mailparser": "^3.9.17",
     "smtp-server": "^3.19.2"
   }
 }
